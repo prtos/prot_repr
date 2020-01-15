@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 import pickle as pkl
+import tempfile
+from prot_repr.utils import result_folder
 
 def write_fasta(seqs, fname):
     with open(fname, "w") as f:
@@ -10,6 +12,9 @@ def write_fasta(seqs, fname):
 
 
 def blast_based_features(protein_sequences, ref_sequences=None, output_dir=None, n_jobs=-1):
+    if output_dir is None:
+        output_dir = tempfile.mkdtemp(dir=result_folder)
+
     if not os.path.exists(output_dir):
         print(f">>> Creating the output dir: {output_dir}")
         os.makedirs(output_dir)
@@ -59,3 +64,9 @@ def blast_based_features(protein_sequences, ref_sequences=None, output_dir=None,
     with open(output_pkl, 'wb') as fd:
         pkl.dump(arr, fd)
     return arr
+
+if __name__ == '__main__':
+    from prot_repr.datasets.loaders import load_fasta_proteins
+    prots = load_fasta_proteins()[:100]
+    res = blast_based_features(prots)
+    print(res)
