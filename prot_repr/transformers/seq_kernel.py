@@ -228,8 +228,8 @@ def get_kmers(seq, k, step=1):
     return [seq[i:i+k] for i in range(n-k) if i%step==0]
 
 
-def gs_based_features(protein_sequences, k=31, step=15, sigma_c=DEFAULT_SIGMA_C, sigma_p=DEFAULT_SIGMA_P,
-                      batch_size=16, feat_dim=1000, seed=42):
+def kernel_transform(protein_sequences, k=31, step=15, sigma_c=DEFAULT_SIGMA_C, sigma_p=DEFAULT_SIGMA_P,
+                     batch_size=16, feat_dim=1000, seed=42):
     random.seed(seed)
     prot_kmers = [get_kmers(prot, k, step) for prot in protein_sequences]
     x = list(set(sum(prot_kmers, [])))
@@ -250,6 +250,6 @@ def gs_based_features(protein_sequences, k=31, step=15, sigma_c=DEFAULT_SIGMA_C,
 if __name__ == '__main__':
     from prot_repr.datasets.loaders import load_fasta_proteins
     prots = load_fasta_proteins()[:100]
-    res = gs_based_features(prots, sigma_p=10, feat_dim=10)
+    res = kernel_transform(prots, sigma_p=10, feat_dim=10)
     print(res.shape)
 

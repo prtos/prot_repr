@@ -10,6 +10,8 @@ from prot_repr.utils import dataset_folder, result_folder
 from prot_repr.models.dim import DIMModel
 
 VOCAB_SIZE = 27
+PADDING_IDX = 0
+
 
 def Variable(tensor):
     """Wrapper for torch.autograd.Variable that also accepts
@@ -33,9 +35,9 @@ class FastaDataset(Dataset):
         Returns:
                 A custom PyTorch dataset for training the model.
     """
-    padding_idx = 0
+    voc = {chr(ord('A') + el): el + 1 for el in range(VOCAB_SIZE)}
+
     def __init__(self, fname=os.path.join(dataset_folder, 'uniprotkb_human.fasta')):
-        self.voc = {chr(ord('A')+el): el+1 for el in range(VOCAB_SIZE)}
         with open(fname, "r") as fd:
             self.seqs = [torch.tensor([self.voc[s] for s in str(record.seq)])
                          for i, record in enumerate(SeqIO.parse(fd, "fasta"))
@@ -53,10 +55,21 @@ class FastaDataset(Dataset):
         return "Dataset containing {} proteins.".format(len(self))
 
     @classmethod
+    def transform(cls, proteins):
+        """Function to take a list of protein sequences and turn them into a matrice"""
+        seqs = [torch.tensor([cls.voc[s] for s in seq])
+                for seq in proteins]
+        max_length = max([len(seq) for seq in proteins])
+        collated_arr = Variable(torch.zeros(len(seqs), max_length)).long() + PADDING_IDX
+        for i, seq in enumerate(seqs):
+            collated_arr[i, :seq.shape[0]] = seq
+        return collated_arr
+
+    @classmethod
     def collate_fn(cls, arr):
         """Function to take a list of encoded sequences and turn them into a batch"""
         max_length = max([len(seq) for seq in arr])
-        collated_arr = Variable(torch.zeros(len(arr), max_length)).long() + FastaDataset.padding_idx
+        collated_arr = Variable(torch.zeros(len(arr), max_length)).long() + PADDING_IDX
         for i, seq in enumerate(arr):
             collated_arr[i, :len(seq)] = seq
         return collated_arr
@@ -101,15 +114,31 @@ def pretrain(output_path=result_folder, restore_existing=True,
 
     trainer.fit(model)
 
+def load_model(path=result_folder, version=None):
+
+    if version is None:
+        version=1
+
+    logger = TestTubeLogger(
+        save_dir=path,
+        version=version  # An existing version with a saved checkpoint
+    )
+
+    trainer = Trainer(
+        logger=logger,
+        default_save_path=path)
+
+    return trainer.model
+
 
 if __name__ == '__main__':
     config = dict(
         encoder_params=dict(
             arch='cnn',
             vocab_size=VOCAB_SIZE,
-            padding_idx=FastaDataset.padding_idx,
+            padding_idx=PADDING_IDX,
             embedding_size=32,
-            cnn_sizes=[32]*3,
+            cnn_sizes=[32] * 3,
             output_size=512,
             kernel_size=11,
             pooling_len=2,
@@ -119,12 +148,12 @@ if __name__ == '__main__':
             b_norm=True,
             dropout=0.0),
         local_mine_params=dict(
-            hidden_sizes=[256]*2,
+            hidden_sizes=[256] * 2,
             activation='ReLU',
             b_norm=False,
             dropout=0.0),
         global_mine_params=dict(
-            hidden_sizes=[256]*2,
+            hidden_sizes=[256] * 2,
             activation='ReLU',
             b_norm=False,
             dropout=0.0),

@@ -11,7 +11,7 @@ def write_fasta(seqs, fname):
             f.write(">" + str(id_seq) + "\n" + seq + "\n")
 
 
-def blast_based_features(protein_sequences, ref_sequences=None, output_dir=None, n_jobs=-1):
+def blast_transform(protein_sequences, ref_sequences=None, output_dir=None, n_jobs=-1):
     if output_dir is None:
         output_dir = tempfile.mkdtemp(dir=result_folder)
 
@@ -67,6 +67,6 @@ def blast_based_features(protein_sequences, ref_sequences=None, output_dir=None,
 
 if __name__ == '__main__':
     from prot_repr.datasets.loaders import load_fasta_proteins
-    prots = load_fasta_proteins()[:100]
-    res = blast_based_features(prots)
+    prots = load_fasta_proteins()# [:100]
+    res = blast_transform(prots)
     print(res)

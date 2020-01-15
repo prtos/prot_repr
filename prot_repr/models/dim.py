@@ -31,6 +31,10 @@ class DIM(nn.Module):
         self.global_discr = Discriminator(input_size=(max_t*self.l_dim + self.g_dim), **global_mine_params)
         self.local_discr = Discriminator(input_size=self.g_dim+self.l_dim, **local_mine_params)
 
+    def encode(self, x):
+        globals_, locals_ = self.encoder(x, return_locals=True)
+        return globals_
+
     def forward(self, x):
         g_dim, l_dim = self.g_dim, self.l_dim
         globals_, locals_ = self.encoder(x, return_locals=True)
@@ -52,13 +56,6 @@ class DIM(nn.Module):
         globals_l = globals_.repeat(b_dim, 1).unsqueeze(1).expand(b_dim*b_dim, t_dim, g_dim)
         locals_mi = self.local_discr(torch.cat((locals_l, globals_l), dim=-1)).transpose(0, 1) # t , b*b
         locals_mi = locals_mi.reshape(t_dim, b_dim, b_dim)
-
-
-        # local_left_term_inputs = self.local_discr(torch.cat((globals_l, locals_), dim=-1)) # b , t
-        # samples_prime = torch.randperm(b_dim*t_dim) # b * n_samples
-        # locals_prime = locals_.reshape(-1, f_dim)[samples_prime.view(-1)].reshape(*locals_.shape)
-        # local_right_term_inputs = self.local_discr(torch.cat((globals_.unsqeeze(1).reshape(*locals_prime.shape),
-        #                               locals_prime), dim=-1)) # b , t
 
         return globals_, locals_, globals_mi, locals_mi
 

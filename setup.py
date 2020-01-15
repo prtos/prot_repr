@@ -25,7 +25,7 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    install_requires=["numpy", "torch"],
+    install_requires=["numpy", "torch", "biopython", "pytorch_lightning"],
 
     keywords='',
 
