@@ -112,3 +112,8 @@ class DIMModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         return self.train_val_step(batch, False)
+
+    def validation_end(self, outputs):
+        # OPTIONAL, necessary for ckpt
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        return {'val_loss': avg_loss}
